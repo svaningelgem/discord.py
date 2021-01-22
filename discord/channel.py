@@ -1044,7 +1044,11 @@ class DMChannel(discord.abc.Messageable, Hashable):
 
     def __init__(self, *, me, state, data):
         self._state = state
-        self.recipient = state.store_user(data['recipients'][0])
+
+        if 'recipient_ids' in data:  # New flow
+            self.recipient = state.get_user(int(data['recipient_ids'][0]))
+        else:
+            self.recipient = state.store_user(data['recipients'][0])
         self.me = me
         self.id = int(data['id'])
 

@@ -398,8 +398,40 @@ class DiscordWebSocket:
         if state._intents is not None:
             payload['d']['intents'] = state._intents.value
 
+        new_payload = {
+            'op': self.IDENTIFY,
+            'd': {
+                'token': self.token,
+                'capabilities': 61,
+                'properties': {
+                    '$os': sys.platform,
+                    '$browser': 'discord.py',
+                    '$device': 'discord.py',
+                    '$referrer': '',
+                    '$referring_domain': ''
+                },
+                "presence": {
+                    "status": "online",
+                    "since": 0,
+                    "activities": [],
+                    "afk": False
+                },
+                "compress": False,
+                "client_state": {
+                    "guild_hashes": {},
+                    "highest_last_message_id": "0",
+                    "read_state_version": 0,
+                    "user_guild_settings_version": -1
+                }
+                # 'compress': False,
+                # 'large_threshold': 250,
+                # 'guild_subscriptions': self._connection.guild_subscriptions,
+                # 'v': 3
+            }
+        }
+
         await self.call_hooks('before_identify', self.shard_id, initial=self._initial_identify)
-        await self.send_as_json(payload)
+        await self.send_as_json(new_payload)
         log.info('Shard ID %s has sent the IDENTIFY payload.', self.shard_id)
 
     async def resume(self):

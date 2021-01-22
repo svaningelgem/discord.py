@@ -464,6 +464,12 @@ class ConnectionState:
         self.user = user = ClientUser(state=self, data=data['user'])
         self._users[user.id] = user
 
+        encountered_users = []
+        for user in data.get('users', []):
+            tmp = User(state=self, data=user)
+            self._users[tmp.id] = tmp
+            encountered_users.append(tmp)  # To prevent it cleaning up until the end of this method.
+
         for guild_data in data['guilds']:
             self._add_guild_from_data(guild_data)
 
@@ -481,6 +487,30 @@ class ConnectionState:
 
         self.dispatch('connect')
         self._ready_task = asyncio.ensure_future(self._delay_ready(), loop=self.loop)
+
+    def parse_ready_supplemental(self, data):
+        # For every guild, just take a channel and send the following payload.
+        for guild in self.guilds:
+            payload = {
+                "op": 14,
+                "d": {
+                    "guild_id": str(guild.id),
+                    "typing": True,
+                    "threads": False,
+                    "activities": True,
+                    "members": [],
+                    "channels": {
+                        str(guild.channels[0].id): [
+                            [
+                                0,
+                                99
+                            ]
+                        ]
+                    }
+                }
+            }
+
+            asyncio.ensure_future(self._get_websocket().send_as_json(payload), loop=self.loop)
 
     def parse_resumed(self, data):
         self.dispatch('resumed')
